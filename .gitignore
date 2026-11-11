@@ -13,3 +13,5 @@ tsconfig.tsbuildinfo
 dist/
 coverage/
 .nyc_output/
+.scannerwork/
+.env

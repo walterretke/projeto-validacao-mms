@@ -6,7 +6,11 @@
   "scripts": {
     "start": "node_modules/.bin/ts-node .",
     "test": "node_modules/.bin/mocha --require ts-node/register --recursive test/**/*.spec.ts",
-    "compile": "tsc"
+    "compile": "tsc",
+    "db:up": "docker compose up -d --wait db",
+    "db:down": "docker compose down",
+    "sonar:up": "docker compose --profile analise up -d sonarqube",
+    "sonar:scan": "docker compose --profile analise --profile scan run --rm scanner"
   },
   "license": "ISC",
   "dependencies": {
