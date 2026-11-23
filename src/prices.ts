@@ -1,6 +1,11 @@
 import express from "express";
 import mysql from "mysql2/promise"
 
+import {handleErrors} from "./http/error-handling"
+import {createV2Routes} from "./http/v2-routes"
+import {MysqlPricingDao} from "./pricing/pricing-dao"
+import {PricingService} from "./pricing/pricing-service"
+
 async function createApp() {
     const app = express()
 
@@ -87,6 +92,12 @@ async function createApp() {
             }
         }
     })
+
+    // Strangler Fig: a implementação nova responde em /v2, ao lado do código legado.
+    const pricingService = new PricingService(new MysqlPricingDao(connection))
+    app.use('/v2', express.json(), createV2Routes(pricingService))
+    app.use(handleErrors)
+
     return {app, connection}
 }
 
