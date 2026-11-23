@@ -57,3 +57,5 @@ Para ver a cobertura:
 ```bash
 npm run test:coverage
 ```
+
+> Na Etapa 3 os bugs foram corrigidos e os testes do bloco "Comportamentos estranhos congelados" foram atualizados para o comportamento novo (ver [docs/03-refatoracao.md](03-refatoracao.md#4-bugs-corrigidos)). O helper `erro-nao-tratado.ts` foi removido junto, porque a API não deixa mais erro sem tratamento. A versão exata desta etapa está na tag `etapa-2-blindagem`.
