@@ -2,9 +2,9 @@
   "name": "lift-pass-pricing",
   "version": "1.0.0",
   "description": "Lift-Pass-Pricing refactoring kata",
-  "main": "index.js",
+  "main": "index.ts",
   "scripts": {
-    "start": "node_modules/.bin/ts-node .",
+    "start": "ts-node index.ts",
     "test": "mocha --require ts-node/register --require test/setup.ts --timeout 10000 \"test/**/*.spec.ts\"",
     "test:unit": "mocha --require ts-node/register --require test/setup.ts \"test/unit/**/*.spec.ts\"",
     "test:coverage": "c8 --reporter=text --reporter=lcov --include=src npm test",

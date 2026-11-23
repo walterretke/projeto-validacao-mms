@@ -1,104 +1,23 @@
-import express from "express";
-import mysql from "mysql2/promise"
+import express, {Express} from 'express'
+import mysql from 'mysql2/promise'
 
-import {handleErrors} from "./http/error-handling"
-import {createV2Routes} from "./http/v2-routes"
-import {MysqlPricingDao} from "./pricing/pricing-dao"
-import {PricingService} from "./pricing/pricing-service"
+import {databaseConfig} from './config'
+import {handleErrors} from './http/error-handling'
+import {createLegacyRoutes} from './http/legacy-routes'
+import {createV2Routes} from './http/v2-routes'
+import {MysqlPricingDao} from './pricing/pricing-dao'
+import {PricingService} from './pricing/pricing-service'
 
-async function createApp() {
+// Monta a API: conecta no banco, cria o serviço e registra as rotas.
+export async function createApp(): Promise<{ app: Express, connection: mysql.Connection }> {
+    const connection = await mysql.createConnection(databaseConfig())
+    const service = new PricingService(new MysqlPricingDao(connection))
+
     const app = express()
-
-    let connectionOptions = {
-        host: process.env.DB_HOST ?? 'localhost',
-        port: Number(process.env.DB_PORT ?? 3307),
-        user: process.env.DB_USER ?? 'root',
-        database: process.env.DB_NAME ?? 'lift_pass',
-        password: process.env.DB_PASSWORD ?? 'mysql',
-    }
-    const connection = await mysql.createConnection(connectionOptions)
-
-    app.put('/prices', async (req, res) => {
-        const liftPassCost = req.query.cost
-        const liftPassType = req.query.type
-        const [rows, fields] = await connection.query(
-            'INSERT INTO `base_price` (type, cost) VALUES (?, ?) ' +
-            'ON DUPLICATE KEY UPDATE cost = ?',
-            [liftPassType, liftPassCost, liftPassCost]);
-
-        res.json()
-    })
-    app.get('/prices', async (req, res) => {
-        const result = (await connection.query(
-            'SELECT cost FROM `base_price` ' +
-            'WHERE `type` = ? ',
-            [req.query.type]))[0][0]
-
-        if (req.query.age as any < 6) {
-            res.json({cost: 0})
-        } else {
-            if (req.query.type !== 'night') {
-                const holidays = (await connection.query(
-                    'SELECT * FROM `holidays`'
-                ))[0] as mysql.RowDataPacket[];
-
-                let isHoliday;
-                let reduction = 0
-                for (let row of holidays) {
-                    let holiday = row.holiday
-                    if (req.query.date) {
-                        let d = new Date(req.query.date as string)
-                        if (d.getFullYear() === holiday.getFullYear()
-                            && d.getMonth() === holiday.getMonth()
-                            && d.getDate() === holiday.getDate()) {
-
-                            isHoliday = true
-                        }
-                    }
-
-                }
-
-                if (!isHoliday && new Date(req.query.date as string).getDay() === 1) {
-                    reduction = 35
-                }
-
-                // TODO apply reduction for others
-                if (req.query.age as any < 15) {
-                    res.json({cost: Math.ceil(result.cost * .7)})
-                } else {
-                    if (req.query.age === undefined) {
-                        let cost = result.cost * (1 - reduction / 100)
-                        res.json({cost: Math.ceil(cost)})
-                    } else {
-                        if (req.query.age as any > 64) {
-                            let cost = result.cost * .75 * (1 - reduction / 100)
-                            res.json({cost: Math.ceil(cost)})
-                        } else {
-                            let cost = result.cost * (1 - reduction / 100)
-                            res.json({cost: Math.ceil(cost)})
-                        }
-                    }
-                }
-            } else {
-                if (req.query.age as any >= 6) {
-                    if (req.query.age as any > 64) {
-                        res.json({cost: Math.ceil(result.cost * .4)})
-                    } else {
-                        res.json(result)
-                    }
-                } else {
-                    res.json({cost: 0})
-                }
-            }
-        }
-    })
-
-    // Strangler Fig: a implementação nova responde em /v2, ao lado do código legado.
-    const pricingService = new PricingService(new MysqlPricingDao(connection))
-    app.use('/v2', express.json(), createV2Routes(pricingService))
+    app.disable('x-powered-by')
+    app.use(createLegacyRoutes(service))
+    app.use('/v2', express.json(), createV2Routes(service))
     app.use(handleErrors)
 
     return {app, connection}
 }
-
-export {createApp}

@@ -5,11 +5,11 @@ import mysql from 'mysql2/promise'
 
 import {createApp} from '../../src/prices'
 import {restaurarBanco} from '../helpers/banco'
-import {capturarErroNaoTratado} from '../helpers/erro-nao-tratado'
 
-// Testes de caracterização: registram o que a API responde HOJE, certo ou errado.
-// Eles não dizem como o sistema deveria funcionar. Servem de rede de proteção para
-// a refatoração: se algum valor mudar, o teste avisa.
+// Testes de caracterização: registram o que a API respondia na Etapa 2, certo ou errado.
+// Serviram de rede de proteção para a refatoração: se algum valor mudasse, o teste avisava.
+// Os testes de comportamento normal continuam iguais desde a Etapa 2. Só os do bloco
+// "Bugs corrigidos" foram alterados, de propósito, quando os bugs foram corrigidos.
 
 const TERCA = '2019-02-12'
 const SEGUNDA = '2019-02-11'
@@ -108,71 +108,79 @@ describe('Caracterização da API legada', () => {
         })
     })
 
-    // Comportamentos estranhos encontrados no diagnóstico (docs/01-diagnostico.md, seção 5).
-    // Estão congelados como estão hoje. Corrigir é uma decisão separada da refatoração.
-    describe('Comportamentos estranhos congelados', () => {
-        describe('5.1 o resultado depende do fuso horário do servidor', () => {
+    it('avisa que o endpoint é antigo e aponta para a /v2', async () => {
+        const response = await request(app).get('/prices').query({type: '1jour', age: '30'})
+
+        expect(response.headers['deprecation']).to.equal('true')
+        expect(response.headers['link']).to.equal('</v2/prices>; rel="successor-version"')
+    })
+
+    // Regra mantida de propósito: é decisão de negócio, não bug técnico (docs/03-refatoracao.md).
+    it('5.4 criança não recebe o desconto de segunda e paga mais que o adulto', async () => {
+        expect(await consultarPreco({type: '1jour', age: '10', date: SEGUNDA})).to.equal(25)
+        expect(await consultarPreco({type: '1jour', age: '30', date: SEGUNDA})).to.equal(23)
+    })
+
+    // Comportamentos estranhos do diagnóstico (docs/01-diagnostico.md, seção 5).
+    // Na Etapa 2 eles estavam congelados como eram. Na Etapa 3 foram corrigidos,
+    // e cada teste abaixo diz o que acontecia antes.
+    describe('Bugs corrigidos', () => {
+        describe('5.1 o resultado não depende mais do fuso horário do servidor', () => {
             beforeEach(() => { process.env.TZ = 'America/Sao_Paulo' })
             afterEach(() => { process.env.TZ = 'UTC' })
 
-            it('em São Paulo o desconto de segunda vai para a terça', async () => {
-                expect(await consultarPreco({type: '1jour', age: '30', date: SEGUNDA})).to.equal(35)
-                expect(await consultarPreco({type: '1jour', age: '30', date: TERCA})).to.equal(23)
+            it('em São Paulo o desconto de segunda cai na segunda (antes caía na terça)', async () => {
+                expect(await consultarPreco({type: '1jour', age: '30', date: SEGUNDA})).to.equal(23)
+                expect(await consultarPreco({type: '1jour', age: '30', date: TERCA})).to.equal(35)
             })
 
-            it('em São Paulo o feriado é reconhecido um dia depois', async () => {
+            it('em São Paulo o feriado é reconhecido no dia certo', async () => {
+                expect(await consultarPreco({type: '1jour', age: '30', date: SEGUNDA_FERIADO})).to.equal(35)
                 expect(await consultarPreco({type: '1jour', age: '30', date: '2019-02-19'})).to.equal(35)
             })
 
-            it('em São Paulo o idoso paga 27 numa segunda em vez de 18', async () => {
-                expect(await consultarPreco({type: '1jour', age: '70', date: SEGUNDA})).to.equal(27)
+            it('em São Paulo o idoso paga 18 numa segunda (antes pagava 27)', async () => {
+                expect(await consultarPreco({type: '1jour', age: '70', date: SEGUNDA})).to.equal(18)
             })
         })
 
-        it('5.2 passe noturno sem idade sai de graça', async () => {
-            expect(await consultarPreco({type: 'night', date: TERCA})).to.equal(0)
+        it('5.2 passe noturno sem idade cobra preço de adulto (antes saía de graça)', async () => {
+            expect(await consultarPreco({type: 'night', date: TERCA})).to.equal(19)
         })
 
-        it('5.3 idade inválida: de graça no noturno, preço de adulto no diurno', async () => {
-            expect(await consultarPreco({type: 'night', age: 'abc', date: TERCA})).to.equal(0)
-            expect(await consultarPreco({type: '1jour', age: 'abc', date: TERCA})).to.equal(35)
-            expect(await consultarPreco({type: '1jour', age: 'abc', date: SEGUNDA})).to.equal(23)
+        it('5.3 idade inválida responde 400 (antes saía de graça no noturno)', async () => {
+            for (const tipo of ['night', '1jour']) {
+                const response = await request(app).get('/prices').query({type: tipo, age: 'abc', date: TERCA})
+
+                expect(response.status).to.equal(400)
+                expect(response.body.error).to.contain('Idade inválida')
+            }
         })
 
-        it('5.3 data inválida é aceita e não tem desconto', async () => {
-            expect(await consultarPreco({type: '1jour', age: '30', date: 'abc'})).to.equal(35)
+        it('5.3 data inválida responde 400 (antes era aceita)', async () => {
+            const response = await request(app).get('/prices').query({type: '1jour', age: '30', date: 'abc'})
+
+            expect(response.status).to.equal(400)
+            expect(response.body.error).to.contain('Data inválida')
         })
 
-        it('5.4 criança não recebe o desconto de segunda e paga mais que o adulto', async () => {
-            expect(await consultarPreco({type: '1jour', age: '10', date: SEGUNDA})).to.equal(25)
-            expect(await consultarPreco({type: '1jour', age: '30', date: SEGUNDA})).to.equal(23)
+        it('5.5 tipo de passe inexistente responde 404 e a API continua no ar (antes derrubava o processo)', async () => {
+            for (const idade of ['5', '30']) {
+                const response = await request(app).get('/prices').query({type: 'xyz', age: idade, date: TERCA})
+
+                expect(response.status).to.equal(404)
+            }
+            expect(await consultarPreco({type: 'night', age: '30'})).to.equal(19)
         })
 
-        it('5.5 tipo de passe inexistente com criança menor de 6 devolve 0', async () => {
-            expect(await consultarPreco({type: 'xyz', age: '5', date: TERCA})).to.equal(0)
-        })
+        it('5.6 PUT recusa preço negativo, zero ou que não é número (antes gravava ou derrubava a API)', async () => {
+            for (const custo of ['-50', '0', 'abc']) {
+                const response = await request(app).put('/prices').query({type: 'teste', cost: custo})
 
-        it('5.5 tipo de passe inexistente fica sem resposta e gera erro não tratado', async () => {
-            const {erro, respondeu} = await capturarErroNaoTratado(() =>
-                request(app).get('/prices').query({type: 'xyz', age: '30', date: TERCA}).timeout(1000))
-
-            expect(respondeu).to.equal(false)
-            expect(erro).to.be.instanceOf(TypeError)
-            expect((erro as Error).message).to.contain("reading 'cost'")
-        })
-
-        it('5.6 PUT aceita preço negativo', async () => {
-            await request(app).put('/prices').query({type: 'teste', cost: '-50'})
-
-            expect(await consultarPreco({type: 'teste', age: '30', date: TERCA})).to.equal(-50)
-        })
-
-        it('5.6 PUT com preço que não é número fica sem resposta e gera erro não tratado', async () => {
-            const {erro, respondeu} = await capturarErroNaoTratado(() =>
-                request(app).put('/prices').query({type: 'teste', cost: 'abc'}).timeout(1000))
-
-            expect(respondeu).to.equal(false)
-            expect((erro as Error).message).to.contain('Incorrect integer value')
+                expect(response.status, `cost=${custo}`).to.equal(400)
+            }
+            const consulta = await request(app).get('/prices').query({type: 'teste'})
+            expect(consulta.status).to.equal(404)
         })
     })
 })
