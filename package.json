@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node_modules/.bin/ts-node .",
     "test": "mocha --require ts-node/register --require test/setup.ts --timeout 10000 \"test/**/*.spec.ts\"",
+    "test:unit": "mocha --require ts-node/register --require test/setup.ts \"test/unit/**/*.spec.ts\"",
     "test:coverage": "c8 --reporter=text --reporter=lcov --include=src npm test",
     "compile": "tsc",
     "db:up": "docker compose up -d --wait db",
