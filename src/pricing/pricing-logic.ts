@@ -80,3 +80,25 @@ function applyDiscounts(basePrice: number, discountPercents: number[]): number {
     const denominator = 100 ** discountPercents.length
     return Math.ceil(numerator / denominator)
 }
+
+export function groupDiscount(passes: any[], date: any) {
+    let total = 0
+    for (let pass of passes) {
+        if (pass.age >= 6) {
+            if (passes.length > 3) {
+                if (passes.length > 10) {
+                    if (new Date(date).getDay() == 6) {
+                        total = total + pass.cost * .8
+                    } else {
+                        total = total + pass.cost * .85
+                    }
+                } else {
+                    total = total + pass.cost * .9
+                }
+            } else {
+                total = total + pass.cost
+            }
+        }
+    }
+    return Math.ceil(total)
+}
