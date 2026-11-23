@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  quality-gate:
+    name: Quality Gate
+    runs-on: ubuntu-latest
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+    steps:
+      - name: Baixa o código
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Instala o Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Instala as dependências
+        run: npm ci
+
+      - name: Lint (complexidade, aninhamento e boas práticas)
+        run: npm run lint
+
+      - name: Checagem de tipos do TypeScript
+        run: npm run typecheck
+
+      - name: Sobe o banco MariaDB
+        run: npm run db:up
+
+      - name: Testes com cobertura mínima
+        run: npm run test:coverage
+
+      - name: Guarda o relatório de cobertura
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cobertura
+          path: coverage/
+
+      # Roda só se o segredo SONAR_TOKEN estiver configurado no repositório
+      # (passo a passo em docs/04-automacao.md). Com qualitygate.wait=true,
+      # a pipeline falha se o Quality Gate do SonarCloud reprovar.
+      - name: Análise no SonarCloud
+        if: env.SONAR_TOKEN != ''
+        uses: SonarSource/sonarqube-scan-action@v5
+        with:
+          args: >
+            -Dsonar.organization=${{ vars.SONAR_ORGANIZATION || github.repository_owner }}
+            -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY || format('{0}_{1}', github.repository_owner, github.event.repository.name) }}
+            -Dsonar.qualitygate.wait=true

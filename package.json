@@ -16,7 +16,7 @@
     "db:up": "docker compose up -d --wait db",
     "db:down": "docker compose down",
     "sonar:up": "docker compose --profile analise up -d sonarqube",
-    "sonar:scan": "docker compose --profile analise --profile scan run --rm scanner"
+    "sonar:scan": "node scripts/normalizar-lcov.mjs && docker compose --profile analise --profile scan run --rm scanner"
   },
   "license": "ISC",
   "dependencies": {
