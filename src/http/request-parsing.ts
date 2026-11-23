@@ -20,7 +20,7 @@ export function parseAge(value: unknown): number | undefined {
     }
     const age = parseInteger(value)
     if (age === undefined || age > MAX_AGE) {
-        throw new InvalidRequestError(`Idade inválida: ${String(value)}. Use um número inteiro de 0 a ${MAX_AGE}`)
+        throw new InvalidRequestError(`Idade inválida: ${describe(value)}. Use um número inteiro de 0 a ${MAX_AGE}`)
     }
     return age
 }
@@ -32,7 +32,7 @@ export function parseDate(value: unknown): PassDate | undefined {
     }
     const date = typeof value === 'string' ? parsePassDate(value) : undefined
     if (date === undefined) {
-        throw new InvalidRequestError(`Data inválida: ${String(value)}. Use o formato AAAA-MM-DD`)
+        throw new InvalidRequestError(`Data inválida: ${describe(value)}. Use o formato AAAA-MM-DD`)
     }
     return date
 }
@@ -40,7 +40,7 @@ export function parseDate(value: unknown): PassDate | undefined {
 export function parseCost(value: unknown): number {
     const cost = parseInteger(value)
     if (cost === undefined || cost <= 0) {
-        throw new InvalidRequestError(`Preço inválido: ${String(value)}. Use um número inteiro maior que zero`)
+        throw new InvalidRequestError(`Preço inválido: ${describe(value)}. Use um número inteiro maior que zero`)
     }
     return cost
 }
@@ -53,4 +53,8 @@ function parseInteger(value: unknown): number | undefined {
         return Number(value)
     }
     return undefined
+}
+
+function describe(value: unknown): string {
+    return typeof value === 'string' ? value : JSON.stringify(value)
 }

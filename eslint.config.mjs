@@ -31,11 +31,13 @@ export default tseslint.config(
         languageOptions: {globals: {console: "readonly", process: "readonly"}},
     },
     {
-        // Testes podem ter funções maiores (tabelas de casos), mas o resto das regras vale.
+        // Testes podem ter funções maiores (tabelas de casos) e usam asserções do Chai
+        // como expect(x).to.be.undefined. O resto das regras vale.
         files: ["test/**/*.ts"],
         rules: {
             "max-lines-per-function": "off",
             "max-statements": "off",
+            "@typescript-eslint/no-unused-expressions": "off",
         },
     },
 );

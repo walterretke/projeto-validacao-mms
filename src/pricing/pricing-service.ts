@@ -31,12 +31,10 @@ export class PricingService {
     async quoteMany(passes: PassRequest[], date?: PassDate): Promise<PassQuote[]> {
         const day = date && {isMonday: date.isMonday, isHoliday: await this.dao.isHoliday(date.iso)}
 
-        const quotes: PassQuote[] = []
-        for (const pass of passes) {
+        return Promise.all(passes.map(async pass => {
             const basePrice = await this.findBasePrice(pass.passType)
-            quotes.push({...pass, cost: calculateCost({...pass, basePrice, day})})
-        }
-        return quotes
+            return {...pass, cost: calculateCost({...pass, basePrice, day})}
+        }))
     }
 
     async saveBasePrice(passType: string, cost: number): Promise<void> {

@@ -26,7 +26,7 @@ describe('parsePassDate', () => {
 
     for (const invalida of ['abc', '', '2019-2-11', '11/02/2019', '2019-02-30', '2019-13-01', '2019-02-11T10:00']) {
         it(`recusa a data inválida "${invalida}"`, () => {
-            expect(parsePassDate(invalida)).to.equal(undefined)
+            expect(parsePassDate(invalida)).to.be.undefined
         })
     }
 })
