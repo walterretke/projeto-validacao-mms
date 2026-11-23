@@ -5,7 +5,7 @@ services:
     environment:
       MARIADB_ROOT_PASSWORD: mysql
     ports:
-      - "3306:3306"
+      - "${DB_PORT:-3307}:3306"
     volumes:
       - ./database:/docker-entrypoint-initdb.d:ro
     healthcheck:
