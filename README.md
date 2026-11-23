@@ -13,7 +13,7 @@ O código legado é o kata [Lift Pass Pricing](https://github.com/martinsson/Ref
 | Etapa | Descrição | Status |
 |---|---|---|
 | 1. Diagnóstico | Análise estática (SonarQube e ESLint), métricas, code smells e débito técnico | Concluída ([relatório](docs/01-diagnostico.md)) |
-| 2. Blindagem | Testes de caracterização para congelar o comportamento atual | Pendente |
+| 2. Blindagem | Testes de caracterização para congelar o comportamento atual | Concluída ([relatório](docs/02-blindagem.md)) |
 | 3. Refatoração | Separação da regra de negócio e migração com Strangler Fig | Pendente |
 | 4. Automação | Pipeline de CI/CD com Quality Gate | Pendente |
 
