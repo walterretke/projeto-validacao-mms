@@ -34,7 +34,7 @@ Os valores limite foram escolhidos de propósito: 5 e 6 (fronteira do "não paga
 
 ## 4. Os testes realmente protegem?
 
-Um teste que nunca falha não protege nada. Para conferir, mudei de propósito o desconto de criança de `.7` para `.8` no código legado e rodei os testes: **6 falharam**, exatamente os casos de criança. Depois desfiz a mudança.
+Um teste que nunca falha não protege nada. Para conferir, mudei de propósito o desconto de criança de `.7` para `.8` no código legado e rodei os testes: **3 falharam**, exatamente os casos de criança (idade 6, idade 14 e o caso 5.4, da criança na segunda-feira). Depois desfiz a mudança.
 
 Cobertura do código legado com os testes de caracterização (`npm run test:coverage`):
 
