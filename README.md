@@ -2,6 +2,10 @@
 
 [![CI](https://github.com/walterretke/projeto-validacao-mms/actions/workflows/ci.yml/badge.svg)](https://github.com/walterretke/projeto-validacao-mms/actions/workflows/ci.yml)
 
+**Vídeo de apresentação:** https://www.youtube.com/watch?v=dwABIRErNiM
+
+**Guia da entrega** (onde está cada item combinado): [docs/00-entrega.md](docs/00-entrega.md)
+
 Projeto prático "ponta a ponta" para validar a disciplina de Manutenção e Melhoria de Software (MMS). A ideia é pegar um código legado e aplicar nele os quatro pilares da disciplina: **diagnóstico** (levantar métricas, complexidade e code smells com análise estática), **blindagem** (testes de caracterização que congelam o comportamento atual), **refatoração** (corrigir as fragilidades encontradas, sempre protegido pelos testes) e **automação** (pipeline de CI/CD com Quality Gate). O histórico do Git mostra o antes e o depois do código.
 
 ## Sistema escolhido
